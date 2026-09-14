@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tati Energy Rewards Console</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { color: #38bdf8; }
+    .card { background: #1e293b; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #334155; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    label { display: block; margin-top: 0.5rem; font-size: 0.875rem; color: #94a3b8; }
+    select, input, button { width: 100%; padding: 0.6rem; margin-top: 0.25rem; background: #0f172a; border: 1px solid #475569; color: #fff; border-radius: 4px; box-sizing: border-box; }
+    button { background: #0284c7; font-weight: bold; cursor: pointer; margin-top: 1rem; border: none; }
+    button:hover { background: #0369a1; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #334155; font-size: 0.875rem; }
+    th { color: #38bdf8; }
+    .hash { font-family: monospace; color: #a7f3d0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ Tati Energy Generator Rewards</h1>
+
+    <div class="grid">
+      <!-- Submission Form -->
+      <div class="card">
+        <h3>Submit Generation Telemetry</h3>
+        <label>Select Generator</label>
+        <select id="generatorSelect">
+          <option value="GEN-MUTARE-001">Mutare Solar Array (GEN-MUTARE-001)</option>
+          <option value="GEN-CHIPINGE-002">Chipinge Hydro Micro-Grid (GEN-CHIPINGE-002)</option>
+        </select>
+
+        <label>Energy Generated (kWh)</label>
+        <input type="number" id="kwhInput" placeholder="e.g. 150.5" step="0.1" />
+
+        <button onclick="submitEnergy()">Mint Reward Tokens</button>
+      </div>
+
+      <!-- Ledger Summary -->
+      <div class="card">
+        <h3>System Balances</h3>
+        <p>Total TATI Coins Minted: <strong id="totalMinted" style="color:#34d399">0.00</strong></p>
+        <div id="generatorList"></div>
+      </div>
+    </div>
+
+    <!-- Transaction Ledger -->
+    <div class="card">
+      <h3>Recent Ledger Transactions</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Tx Hash</th>
+            <th>Generator</th>
+            <th>Energy (kWh)</th>
+            <th>Reward (TATI)</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="txTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3001/api';
+
+    async function fetchLedger() {
+      const res = await fetch(`${API_URL}/ledger/status`);
+      const data = await res.json();
+
+      document.getElementById('totalMinted').innerText = data.totalMinted + ' TATI';
+
+      // Update Generator Balances
+      const genDiv = document.getElementById('generatorList');
+      genDiv.innerHTML = '';
+      Object.entries(data.generators).forEach(([id, gen]) => {
+        genDiv.innerHTML += `<p><strong>${gen.name}</strong><br/>Balance: ${gen.balance} TATI (${gen.totalKwh} kWh total)</p>`;
+      });
+
+      // Update Transactions Table
+      const tbody = document.getElementById('txTable');
+      tbody.innerHTML = data.recentTransactions.map(tx => `
+        <tr>
+          <td class="hash">${tx.txHash.substring(0, 12)}...</td>
+          <td>${tx.generatorId}</td>
+          <td>${tx.kwhGenerated} kWh</td>
+          <td style="color:#34d399">+${tx.rewardAmount} TATI</td>
+          <td>${new Date(tx.timestamp).toLocaleTimeString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function submitEnergy() {
+      const generatorId = document.getElementById('generatorSelect').value;
+      const kwhGenerated = parseFloat(document.getElementById('kwhInput').value);
+
+      if (!kwhGenerated) return alert('Please enter a valid kWh value.');
+
+      const res = await fetch(`${API_URL}/energy/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generatorId, kwhGenerated })
+      });
+
+      if (res.ok) {
+        document.getElementById('kwhInput').value = '';
+        fetchLedger();
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    }
+
+    fetchLedger();
+    setInterval(fetchLedger, 5000);
+  </script>
+</body>
+</html>
