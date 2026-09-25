@@ -1,55 +1,39 @@
-# Dependencies
+# Node & Package Managers
 /node_modules
 /.pnpm-store
-/yarn.lock
-/package-lock.json
-/pnpm-lock.yaml
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Next.js Build Outputs
+# Next.js Build Output
 /.next/
 /out/
-/build/
-/dist/
+/build
+/dist
 
-# Environment Variables & Secrets
+# Target Directory Exception
+# Ignores Rust/Anchor build binaries while preserving generated TypeScript types & IDL files for Vercel
+/target/*
+!/target/types/
+!/target/idl/
+
+# Environment Files & Secrets
 .env
 .env*.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.pem
-*.key
-*.cert
+!.env.example
 
-# Local Database & Edge Buffers
-/*.db
-/*.sqlite
-/*.sqlite3
-/logs/
-*.log
+# Testing Output & Coverage
+/coverage
+/.nyc_output
 
-# Operating System Files
+# IDE, OS, & System Artifacts
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# IDEs & Code Editors
+*.pem
 .vscode/
 !.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
 .idea/
-*.swp
-*.swo
 
-# Testing & Coverage
-/coverage/
-/.nyc_output/
-
-# Vercel Deployment
+# Vercel Deployment Artifacts
 .vercel
