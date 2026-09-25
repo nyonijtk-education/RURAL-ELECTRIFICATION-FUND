@@ -31,11 +31,13 @@
   ],
   "exclude": [
     "node_modules",
+    "../mintTest.ts",
+    "../listener.ts",
+    "../tests/**/*",
+    "../target/**/*",
     "mintTest.ts",
     "listener.ts",
     "tests/**/*",
-    "**/*.test.ts",
-    "**/*.spec.ts",
     "target/**/*"
   ]
 }
