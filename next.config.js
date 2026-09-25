@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    // Allows production builds to successfully complete even if the project has type errors in non-web scripts
     ignoreBuildErrors: true,
+    tsconfigPath: 'tsconfig.build.json',
   },
   eslint: {
-    // Disables ESLint checks during Vercel builds
     ignoreDuringBuilds: true,
   },
 };
