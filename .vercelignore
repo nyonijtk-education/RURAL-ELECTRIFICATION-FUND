@@ -1,6 +1,0 @@
-echo "mintTest.ts" > .vercelignore
-echo "listener.ts" >> .vercelignore
-echo "tests/" >> .vercelignore
-echo "target/" >> .vercelignore
-echo "solana-scripts/" >> .vercelignore
-echo "Anchor.toml" >> .vercelignore
