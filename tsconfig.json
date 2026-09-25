@@ -25,15 +25,19 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
     ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
+    "scripts",
+    "solana-scripts",
+    "tests",
+    "target",
     "mintTest.ts",
-    "listener.ts",
-    "tests/**/*",
-    "target/**/*"
+    "listener.ts"
   ]
 }
