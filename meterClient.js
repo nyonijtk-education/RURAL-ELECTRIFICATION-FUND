@@ -1,57 +1,66 @@
 const crypto = require('crypto');
 
-// Simulate hardware setup: Load the meter's stored private key
-// (In production, generate this once and secure it in hardware/HSM)
-const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
+const TARGET_URL = 'http://localhost:3000/api/tati';
+const GENERATOR_ID = 'GEN-MUTARE-001';
 
-// Public key exported in DER-HEX format for backend registration
-const METER_PUBLIC_KEY_HEX = publicKey.export({ type: 'spki', format: 'der' }).toString('hex');
-const GENERATOR_ID = "GEN-MUTARE-001";
+// Generate standard KeyObjects for ECDSA signing (secp256k1)
+const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+  namedCurve: 'secp256k1',
+});
 
-console.log("--- SMART METER CONFIGURATION ---");
-console.log(`Generator ID: ${GENERATOR_ID}`);
-console.log(`Registered Public Key (HEX):\n${METER_PUBLIC_KEY_HEX}\n`);
+// Export Public Key to hex for display and payload transmission
+const pubKeyHex = publicKey.export({ type: 'spki', format: 'der' }).toString('hex');
 
-/**
- * Creates and signs an energy payload.
- */
-function createSignedPayload(kwhGenerated) {
+function createTelemetryPayload(kwh) {
   const timestamp = new Date().toISOString();
   const nonce = crypto.randomBytes(8).toString('hex');
 
-  // The canonical message string to sign (prevents key/field ordering ambiguity)
-  const messageToSign = `${GENERATOR_ID}:${kwhGenerated}:${timestamp}:${nonce}`;
+  // String message format to sign
+  const messageData = `${GENERATOR_ID}:${kwh}:${timestamp}:${nonce}`;
 
-  // Sign using Ed25519 private key
-  const signature = crypto.sign(null, Buffer.from(messageToSign), privateKey).toString('hex');
+  // Sign message directly using the privateKey KeyObject
+  const sign = crypto.createSign('SHA256');
+  sign.update(messageData);
+  sign.end();
+  const signatureHex = sign.sign(privateKey, 'hex');
 
   return {
     generatorId: GENERATOR_ID,
-    kwhGenerated,
+    kwhGenerated: kwh,
     timestamp,
     nonce,
-    signature
+    signature: signatureHex,
+    publicKey: pubKeyHex,
   };
 }
 
-// Simulate sending a verified meter reading to the API
 async function sendTelemetry() {
-  const payload = createSignedPayload(85.4); // 85.4 kWh generated
+  console.log('--- SMART METER CONFIGURATION ---');
+  console.log(`Generator ID: ${GENERATOR_ID}`);
+  console.log(`Registered Public Key (HEX):\n${pubKeyHex.substring(0, 64)}...\n`);
 
-  console.log("Sending signed payload to Tati Rewards API:");
+  const payload = createTelemetryPayload(85.4);
+
+  console.log('Sending signed payload to Tati Rewards API:');
   console.log(JSON.stringify(payload, null, 2));
 
   try {
-    const response = await fetch('http://localhost:3001/api/energy/submit', {
+    const response = await fetch(TARGET_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status} - ${errorText}`);
+    }
+
     const result = await response.json();
-    console.log("\nBackend Response:", result);
+    console.log('\nTransmission Success!');
+    console.log('API Response:', JSON.stringify(result, null, 2));
   } catch (err) {
-    console.error("Transmission failed:", err.message);
+    console.error(`\nTransmission failed: ${err.message}`);
   }
 }
 
